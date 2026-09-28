@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Model performance | Deep Learning Based Crop Yield Prediction System</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231E6B47'/%3E%3Cpath d='M16 26V14M16 16c0-4 3-6 7-6 0 4-3 6-7 6zM16 19c0-3-2-5-6-5 0 3 2 5 6 5z' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="8" fill="#1E6B47"/><path d="M16 26V14M16 16c0-4 3-6 7-6 0 4-3 6-7 6zM16 19c0-3-2-5-6-5 0 3 2 5 6 5z" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="brand-text">Deep Learning Based Crop Yield Prediction System</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="/">Predict</a>
+      <a href="/performance" aria-current="page">Model performance</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-head">
+      <h1>Model performance</h1>
+      <p>How well the neural network predicts yields it has never seen. All numbers below come from the held-out test set, which was not used for training or for choosing when to stop.</p>
+    </section>
+
+    {% if error or not meta or not summary %}
+      <div class="notice">
+        {{ error or "No evaluation results were found. Run  python train.py  once, then reload this page." }}
+      </div>
+    {% else %}
+
+    <section class="metrics" aria-label="Key metrics">
+      <div class="metric">
+        <p class="m-name">MAE</p>
+        <p class="m-value">{{ "%.2f"|format(meta.metrics.test.mae) }}</p>
+        <p class="m-unit">tonnes/hectare</p>
+        <p class="m-note">Typical size of the error</p>
+      </div>
+      <div class="metric">
+        <p class="m-name">RMSE</p>
+        <p class="m-value">{{ "%.2f"|format(meta.metrics.test.rmse) }}</p>
+        <p class="m-unit">tonnes/hectare</p>
+        <p class="m-note">Error, with big misses counted more</p>
+      </div>
+      <div class="metric">
+        <p class="m-name">R²</p>
+        <p class="m-value">{{ "%.3f"|format(meta.metrics.test.r2) }}</p>
+        <p class="m-unit">1.0 is a perfect fit</p>
+        <p class="m-note">Share of yield variation explained</p>
+      </div>
+      <div class="metric">
+        <p class="m-name">Training loss</p>
+        <p class="m-value">{{ "%.4f"|format(summary.train_loss) }}</p>
+        <p class="m-unit">MSE, standardised yield</p>
+        <p class="m-note">At the best epoch ({{ summary.best_epoch }})</p>
+      </div>
+      <div class="metric">
+        <p class="m-name">Validation loss</p>
+        <p class="m-value">{{ "%.4f"|format(summary.val_loss) }}</p>
+        <p class="m-unit">MSE, standardised yield</p>
+        <p class="m-note">At the best epoch ({{ summary.best_epoch }})</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <h2>Network architecture</h2>
+      <p>Six inputs are preprocessed into {{ meta.training.n_input_features }} numbers, then pass through three hidden layers to one output: the yield.</p>
+      <div class="diagram">
+        <img src="{{ url_for('static', filename='architecture.svg') }}" alt="Diagram: inputs, preprocessing, Dense 128 ReLU, Dropout, Dense 64 ReLU, Dropout, Dense 32 ReLU, Dense 1 linear output giving crop yield">
+      </div>
+    </section>
+
+    <div class="two-col">
+      <section class="block">
+        <h2>How it was trained</h2>
+        <ul class="facts">
+          <li>{{ "{:,}".format(meta.cleaning_report.clean_rows) }} clean records after removing {{ "{:,}".format(meta.cleaning_report.duplicate_rows_removed) }} duplicates</li>
+          <li>Split: {{ "{:,}".format(meta.split_sizes.train) }} train, {{ "{:,}".format(meta.split_sizes.validation) }} validation, {{ "{:,}".format(meta.split_sizes.test) }} test</li>
+          <li>Preprocessing fitted on training data only (no leakage)</li>
+          <li>{{ meta.training.optimizer }}, loss: {{ meta.training.loss }}</li>
+          <li>Batch size {{ meta.training.batch_size }}, stopped after {{ meta.training.epochs_run }} epochs (best epoch {{ summary.best_epoch }}) by EarlyStopping</li>
+          <li>{{ "{:,}".format(meta.training.parameters) }} trainable parameters</li>
+        </ul>
+      </section>
+      <section class="block">
+        <h2>Software versions</h2>
+        <ul class="facts">
+          <li>Python {{ meta.versions.python }}</li>
+          <li>TensorFlow {{ meta.versions.tensorflow }} with Keras {{ meta.versions.keras }}</li>
+          <li>NumPy {{ meta.versions.numpy }}, pandas {{ meta.versions.pandas }}</li>
+          <li>scikit-learn {{ meta.versions.scikit_learn }}</li>
+          <li>Random seed {{ meta.training.random_state }}</li>
+          <li>Target unit in the dataset: {{ meta.target_unit_in_dataset }}. Shown in t/ha (1 t = {{ "{:,}".format(meta.hg_per_tonne) }} hg)</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="block">
+      <h2>Training graphs</h2>
+      <div class="charts">
+        <figure class="chart full">
+          <img src="{{ url_for('results_file', filename='training_loss.png') }}" alt="Line chart of training loss and validation loss by epoch">
+          <figcaption>Training vs validation loss. Both fall together and level out, which means the network learned the pattern without simply memorising the training rows. Training stopped when validation loss stopped improving.</figcaption>
+        </figure>
+        <figure class="chart">
+          <img src="{{ url_for('results_file', filename='actual_vs_predicted.png') }}" alt="Scatter plot of actual against predicted yield on the test set">
+          <figcaption>Actual vs predicted yield on the test set. Points close to the diagonal line are accurate predictions.</figcaption>
+        </figure>
+        <figure class="chart">
+          <img src="{{ url_for('results_file', filename='residuals.png') }}" alt="Histogram of prediction errors on the test set">
+          <figcaption>Error distribution. Most errors sit close to zero; a few large misses appear in the tails.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    {% if meta.examples %}
+    <section class="block">
+      <h2>Test cases from real dataset rows</h2>
+      <p>These records come from the test set. The model never saw them while training. Yields are in tonnes/hectare.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Country</th><th>Crop</th><th class="num">Year</th><th class="num">Rainfall (mm)</th>
+              <th class="num">Pesticides (t)</th><th class="num">Temp (°C)</th>
+              <th class="num">Actual</th><th class="num">Predicted</th><th class="num">Error</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in meta.examples %}
+            <tr>
+              <td>{{ e.country }}</td><td>{{ e.crop }}</td><td class="num">{{ e.year }}</td>
+              <td class="num">{{ "{:,.0f}".format(e.rainfall) }}</td>
+              <td class="num">{{ "{:,.0f}".format(e.pesticides) }}</td>
+              <td class="num">{{ "%.2f"|format(e.temperature) }}</td>
+              <td class="num">{{ "%.2f"|format(e.actual_t_ha) }}</td>
+              <td class="num">{{ "%.2f"|format(e.predicted_t_ha) }}</td>
+              <td class="num">{{ "%+.2f"|format(e.predicted_t_ha - e.actual_t_ha) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endif %}
+
+    {% endif %}
+  </main>
+
+  <footer class="footer">
+    <p>Deep Learning Based Crop Yield Prediction System: an Advanced Deep Learning project. Predictions are estimates from historical data and not professional agricultural advice.</p>
+  </footer>
+</body>
+</html>

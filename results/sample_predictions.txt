@@ -1,0 +1,14 @@
+Test cases - real rows from the TEST set (unseen during training)
+================================================================================================
+Country         Crop             Year  Rain(mm)    Pest(t)   Temp   Actual  Predicted   Error
+India           Potatoes         1990      1083      75000  25.16    15.71      15.82   +0.11
+India           Potatoes         2013      1083      45620  26.71    22.76      21.55   -1.21
+India           Sorghum          1990      1083      75000  26.36     0.81       1.34   +0.53
+Colombia        Soybeans         1994      3240      17051  27.17     1.93       1.86   -0.07
+Brazil          Cassava          2010      1761     342580  26.30    13.95      13.81   -0.14
+Cameroon        Rice, paddy      2010      1604       1161  25.70     1.09       2.73   +1.64
+Turkey          Maize            1998       593      30162  14.48     4.22       4.38   +0.16
+
+Yields are in tonnes/hectare. 'Actual' is the value recorded in the dataset.
+The model output is an ESTIMATE; compare it with known dataset values like these,
+not with a random number from the internet (different sources use different data).
